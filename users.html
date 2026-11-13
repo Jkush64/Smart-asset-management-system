@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Asset Management System - Users</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .users-matrix-card { padding: 0 !important; margin-top: 25px; overflow: hidden; width: 100%; }
+        .row-alignment-table { width: 100%; border-collapse: collapse; text-align: left; }
+        
+        .member-row td { padding: 16px 24px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        .circle-avatar-icon { width: 44px; height: 44px; background-color: #1e3a8a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 0.95rem; }
+        
+        .location-badge-box { background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+        .role-tag-badge { background-color: #1a365d; color: white; padding: 6px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; text-transform: lowercase; display: inline-block; }
+        
+        .metadata-activity { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; text-align: right; }
+        .metadata-activity span { font-weight: 500; color: #64748b; display: block; margin-bottom: 2px; }
+
+        .overlay-mask { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:2000; }
+        .form-input-field { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; box-sizing: border-box; font-size: 0.9rem; }
+        .form-select-field { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; box-sizing: border-box; background: white; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div>
+            <div class="sidebar-title">Smart Asset</div>
+            <nav>
+                <p>Workspace</p>
+                <a href="/">Dashboard</a>
+                <a href="/branches">Branches</a>
+                <a href="/maintenance">Maintenance</a>
+                <a href="/reports">Reports</a>
+                <a href="/audit">Audit Trails</a>
+                <a href="{{ url_for('junk_page') }}">Junk Assets</a>
+                <a href="/users" class="active">Users</a>
+                <a href="{{ url_for('settings_page') }}">Settings</a>
+            </nav>
+        </div>
+        <div class="sidebar-profile-footer"><div class="avatar-badge-circle">SA</div><div><strong style="color:white; font-size:0.85rem;">Admin</strong></div></div>
+    </aside>
+
+    <main>
+        <header>
+            <div>
+                <span style="color: #94a3b8; font-size: 0.75rem; font-weight: bold;">IDENTITY LOGISTICS</span>
+                <h1 style="margin: 2px 0 0 0; font-size: 1.25rem;">System Personnel</h1>
+            </div>
+            <div class="top-right-hub"><div class="avatar-badge-circle">SA</div></div>
+        </header>
+
+        <div class="dashboard-container">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
+                <div>
+                    <h2 style="margin: 0; font-size: 1.75rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">Users</h2>
+                    <p style="color: var(--text-muted); margin: 4px 0 0 0; font-size: 0.88rem; font-weight: 500;">{{ count }} team members · 0 pending</p>
+                </div>
+                <button onclick="toggleProvisioningModal(true)" style="background-color: #1e3a8a; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                    👤+ Add User
+                </button>
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <form action="/users" method="GET">
+                    <input type="text" name="search" style="padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 10px; width: 100%; max-width: 440px; font-size: 0.9rem;" placeholder="Search team members..." value="{{ search_query }}">
+                </form>
+            </div>
+
+            <div class="card users-matrix-card">
+                <div style="padding: 20px 24px 5px 24px;">
+                    <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a;">Team Members</h3>
+                </div>
+                
+                <table class="row-alignment-table">
+                    <tbody>
+                        {% for member in members %}
+                        <tr class="member-row">
+                            <td style="width: 50px; padding-right: 0;">
+                                <div class="circle-avatar-icon">
+                                    <!-- Generates profile initials automatically from name string -->
+                                    {{ member.name[0] if member.name else 'U' }}
+                                </div>
+                            </td>
+                            <td>
+                                <strong style="color: #0f172a; font-size: 0.98rem; display: block; margin-bottom: 2px;">{{ member.name }}</strong>
+                                <span style="color: var(--text-muted); font-size: 0.88rem;">{{ member.email }}</span>
+                            </td>
+                            <td style="text-align: center; width: 180px;">
+                                <div class="location-badge-box">
+                                    🏢 {{ member.branch_assigned }}
+                                </div>
+                            </td>
+                            <td style="text-align: center; width: 120px;">
+                                <span class="role-tag-badge">{{ member.role }}</span>
+                            </td>
+                            <td class="metadata-activity" style="width: 160px;">
+                                <span>Last login</span>
+                                {{ member.last_login }}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr class="member-row">
+                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                No team personnel data found inside storage indices. Click Add User to register profiles.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="provisionModal" class="overlay-mask">
+        <div class="card" style="width: 100%; max-width: 400px; background: white; padding: 25px; box-sizing: border-box;">
+            <h3 style="margin: 0 0 15px 0; font-size: 1.25rem; font-weight: bold; color: #1e3a8a;">Provision Team Access</h3>
+            
+            <form action="/users/add" method="POST">
+                <label style="display:block; font-size:0.75rem; font-weight:bold; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Full Name</label>
+                <input type="text" name="name" class="form-input-field" placeholder="e.g. Alice Wanjiku" required>
+
+                <label style="display:block; font-size:0.75rem; font-weight:bold; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Email Address</label>
+                <input type="email" name="email" class="form-input-field" placeholder="alice@company.com" required>
+
+                <label style="display:block; font-size:0.75rem; font-weight:bold; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Allocate System Password</label>
+                <input type="text" name="password" class="form-input-field" value="SAMS@2026" title="Temporary login key allocated by system administrator" required>
+
+                <label style="display:block; font-size:0.75rem; font-weight:bold; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Assign Security Authorization Role</label>
+                <select name="role" class="form-select-field">
+                    <option value="admin">Admin Access Control</option>
+                    <option value="manager">Branch Work Manager</option>
+                    <option value="technician" selected>Technician Operations Core</option>
+                </select>
+
+                <label style="display:block; font-size:0.75rem; font-weight:bold; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Assign Branch Workspace Node Permission</label>
+                <select name="branch" class="form-select-field">
+                    <option value="Unassigned">Leave Unassigned</option>
+                    {% for b in branches %}
+                    <option value="{{ b.name }}">{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                    <button type="button" onclick="toggleProvisioningModal(false)" style="background: transparent; border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight:600;">Cancel</button>

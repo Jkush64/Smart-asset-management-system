@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Asset Management System - Maintenance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* Table Layout Specifications inside bounded box */
+        .maintenance-table-card { padding: 0; overflow: hidden; margin-top: 20px; width: 100%; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background-color: #f8fafc; color: #475569; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 14px 20px; border-bottom: 1px solid var(--border-color); font-weight: 700; }
+        body.dark-theme th { background-color: rgba(255,255,255,0.02); }
+        td { padding: 14px 20px; border-bottom: 1px solid var(--border-color); font-size: 0.88rem; font-weight: 500; }
+        
+        /* Metric Badges status rules */
+        .priority-high { color: #ef4444; background: rgba(239, 68, 68, 0.08); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
+        .priority-medium { color: #f59e0b; background: rgba(245, 158, 11, 0.08); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
+        
+        .status-overdue { color: #ef4444; font-weight: bold; }
+        .status-pending { color: #2563eb; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR PANEL -->
+    <aside>
+        <div>
+            <div class="sidebar-title">Smart Asset</div>
+             <nav>
+                <p>Workspace</p>
+                <a href="/">Dashboard</a>
+                <a href="/branches">Branches</a>
+                <a href="/maintenance" class="active">Maintenance</a>
+                <a href="/reports">Reports</a>
+                <a href="/audit">Audit Trails</a>
+                <a href="{{ url_for('junk_page') }}">Junk Assets</a>
+                <a href="/users">Users</a>
+                <a href="{{ url_for('settings_page') }}">Settings</a>
+            </nav>
+        </div>
+        <div class="sidebar-profile-footer">
+            <div class="avatar-badge-circle">SA</div>
+            <div>
+                <strong style="color: white; display: block; font-size: 0.85rem; margin: 0;">System Admin</strong>
+                <span style="color: #64748b; display: block; font-size: 0.7rem;">Session Core</span>
+            </div>
+        </div>
+    </aside>
+    <main>
+        <header>
+            <div>
+                <span style="color: #94a3b8; font-size: 0.75rem; font-weight: bold; tracking: 0.05em;">ADMINISTRATION</span>
+                <h1 style="margin: 2px 0 0 0; font-size: 1.25rem;">Maintenance Matrix</h1>
+            </div>
+            <div class="top-right-hub">
+                <div class="avatar-badge-circle">SA</div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
+                <div>
+                    <h2 style="margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em;">Maintenance</h2>
+                    <p style="color: var(--text-muted); margin: 4px 0 0 0; font-size: 0.9rem;">Auto-detected maintenance schedules based on asset purchase dates</p>
+                </div>
+                <!-- Clean actionable Trigger button exactly matching your screenshot position -->
+                <button onclick="window.location.href='/maintenance/generate'" style="background-color: #0A2540; color: white; border: none; padding: 11px 22px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">
+                    📅 Generate Schedule
+                </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div class="card">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Pending</span>
+                    <p style="font-size: 1.75rem; font-weight: bold; margin: 5px 0 0 0; color: #2563eb;">{{ m_stats.pending }}</p>
+                </div>
+                <div class="card">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">In Progress</span>
+                    <p style="font-size: 1.75rem; font-weight: bold; margin: 5px 0 0 0; color: #f59e0b;">{{ m_stats.in_progress }}</p>
+                </div>
+                <div class="card">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Overdue</span>
+                    <p style="font-size: 1.75rem; font-weight: bold; margin: 5px 0 0 0; color: #ef4444;">{{ m_stats.overdue }}</p>
+                </div>
+                <div class="card">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Completed</span>
+                    <p style="font-size: 1.75rem; font-weight: bold; margin: 5px 0 0 0; color: #10b981;">{{ m_stats.completed }}</p>
+                </div>
+            </div>
+
+            <div class="card maintenance-table-card">
+                <div style="padding: 20px 24px 10px 24px;">
+                    <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800;">Maintenance Schedule</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Scheduled Date</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Technician</th>
+                            <th>Est. Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in schedules %}
+                        <tr>
+                            <td style="font-weight: 700; color: #2563eb;">{{ task.asset_name }}</td>
+                            <td style="font-family: monospace;">{{ task.scheduled_date }}</td>
+                            <td>
+                                <span class="{% if task.priority == 'High' %}priority-high{% else %}priority-medium{% endif %}">
+                                    {{ task.priority }}
+                                </span>
+                            </td>
+                            <td class="{% if task.status == 'Overdue' %}status-overdue{% else %}status-pending{% endif %}">
+                                {{ task.status }}
+                            </td>
+                            <td>🛠️ {{ task.technician }}</td>
+                            <td style="font-weight: 600;">KES {{ "{:,.2f}".format(task.est_cost) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6">
+                                <div style="padding: 60px 20px; text-align: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 500;">
+                                    No scheduled maintenance. Click "Generate Schedule" to auto-detect needs.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

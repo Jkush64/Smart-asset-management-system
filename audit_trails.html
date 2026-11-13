@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Audit Trails</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .filter-pill-row { display: flex; gap: 10px; margin: 20px 0; align-items: center; justify-content: space-between; width: 100%; }
+        .pill-btn { border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-dark); padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; }
+        .pill-btn.active { background: #0A2540; color: white; border-color: #0A2540; }
+        
+        .log-item-card { border-left: 4px solid #cbd5e1; margin-bottom: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .log-level-badge { padding: 3px 8px; font-size: 0.7rem; font-weight: bold; border-radius: 4px; text-transform: uppercase; margin-right: 10px; }
+        
+        .log-item-card.INFO { border-left-color: #6366f1; }
+        .log-item-card.WARNING { border-left-color: #f59e0b; }
+        .log-item-card.CRITICAL, .log-item-card.ERROR { border-left-color: #ef4444; }
+        
+        .badge-INFO { background: rgba(99,102,241,0.1); color: #6366f1; }
+        .badge-WARNING { background: rgba(245,158,11,0.1); color: #f59e0b; }
+        .badge-ERROR { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .badge-CRITICAL { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+    <aside>
+        <div>
+            <div class="sidebar-title">Smart Asset</div>
+            <nav>
+                <p>Workspace</p>
+                <a href="/">Dashboard</a>
+                <a href="/branches">Branches</a>
+                <a href="/maintenance">Maintenance</a>
+                <a href="/reports">Reports</a>
+                <a href="/audit" class="active">Audit Trails</a>
+                <a href="{{ url_for('junk_page') }}">Junk Assets</a>
+                <a href="/users">Users</a>
+                <a href="{{ url_for('settings_page') }}">Settings</a>
+            </nav>
+        </div>
+        <div class="sidebar-profile-footer"><div class="avatar-badge-circle">SA</div><div><strong style="color:white; font-size:0.85rem;">Admin</strong></div></div>
+    </aside>
+
+    <main>
+        <header>
+            <div>
+                <span style="color: #94a3b8; font-size: 0.75rem; font-weight: bold;">ADMINISTRATION</span>
+                <h1 style="margin: 2px 0 0 0; font-size: 1.25rem;">Security Logs</h1>
+            </div>
+            <div class="top-right-hub"><div class="avatar-badge-circle">SA</div></div>
+        </header>
+
+        <div class="dashboard-container">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                <div>
+                    <h2 style="margin:0; font-size:1.5rem; font-weight:800;">Audit Trails</h2>
+                    <p style="color:var(--text-muted); margin:0; font-size:0.9rem;">System event log and security monitoring</p>
+                </div>
+                <form action="{{ url_for('clear_audit_logs') }}" method="post" onsubmit="return confirm('Permanently wipe out all system audit histories? This action cannot be undone.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" style="background-color: #ef4444; color: white; border: none; padding: 11px 22px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Clear Logs</button>
+                </form>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px;">
+                <div class="card"><span style="font-size:0.75rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Info</span><p style="font-size:1.5rem; font-weight:bold; margin:5px 0 0 0; color:#6366f1;">{{ counts.info }}</p></div>
+                <div class="card"><span style="font-size:0.75rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Warning</span><p style="font-size:1.5rem; font-weight:bold; margin:5px 0 0 0; color:#f59e0b;">{{ counts.warning }}</p></div>
+                <div class="card"><span style="font-size:0.75rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Error</span><p style="font-size:1.5rem; font-weight:bold; margin:5px 0 0 0; color:#ef4444;">{{ counts.error }}</p></div>
+                <div class="card"><span style="font-size:0.75rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Critical</span><p style="font-size:1.5rem; font-weight:bold; margin:5px 0 0 0; color:#b91c1c;">{{ counts.critical }}</p></div>
+            </div>
+
+            <div class="filter-pill-row">
+                <form action="{{ url_for('audit_page') }}" method="get" style="flex:1; max-width:400px; position:relative; margin:0;">
+                    <input type="text" name="search" placeholder="Search events..." value="{{ search_query }}" style="width:100%; padding:9px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--card-bg); color:var(--text-dark); box-sizing:border-box;">
+                    <input type="hidden" name="level" value="{{ current_level }}">
+                </form>
+                
+                <div style="display:flex; gap:8px;">
+                    <a href="{{ url_for('audit_page', level='All', search=search_query) }}" class="pill-btn {% if current_level == 'All' %}active{% endif %}">All</a>
+                    <a href="{{ url_for('audit_page', level='INFO', search=search_query) }}" class="pill-btn {% if current_level == 'INFO' %}active{% endif %}">Info</a>
+                    <a href="{{ url_for('audit_page', level='WARNING', search=search_query) }}" class="pill-btn {% if current_level == 'WARNING' %}active{% endif %}">Warning</a>
+                    <a href="{{ url_for('audit_page', level='ERROR', search=search_query) }}" class="pill-btn {% if current_level == 'ERROR' %}active{% endif %}">Error</a>
+                    <a href="{{ url_for('audit_page', level='CRITICAL', search=search_query) }}" class="pill-btn {% if current_level == 'CRITICAL' %}active{% endif %}">Critical</a>
+                </div>
+            </div>
+
+            <div>
+                {% for log in logs %}
+                <div class="card log-item-card {{ log.log_level }}">
+                    <div>
+                        <div style="display:flex; align-items:center; margin-bottom:6px;">
+                            <span class="log-level-badge badge-{{ log.log_level }}">{{ log.log_level }}</span>
+                        </div>
+                        <p style="margin:2px 0; font-size:0.82rem; color:var(--text-muted); font-weight:600;">
+                            by <span style="color:#0f172a;">{{ log.username }}</span> · {{ log.timestamp }} · Target: {{ log.asset_info }}
+                        </p>
+                        <p style="margin:6px 0 0 0; font-size:0.88rem; color:#475569; font-weight:500;">
+                            {{ log.action_taken }}
+                        </p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="card" style="text-align:center; padding:40px; color:var(--text-muted);">No system event logs match your query filter.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</body>
+</html>

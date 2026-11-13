@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SAMS Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+<aside>
+    <div><div class="sidebar-title">Smart Asset</div><nav>
+        <p>Workspace</p><a class="active" href="/">Dashboard</a><a href="/branches">Branches</a><a href="/maintenance">Maintenance</a><a href="/reports">Reports</a><a href="/audit">Audit Trails</a><a href="/junk">Junk Assets</a><a href="/users">Users</a><a href="/settings">Settings</a>
+    </nav></div>
+    <a class="btn-logout" href="/auth/logout">Log Out Session</a>
+</aside>
+<main>
+    <header><div><span class="muted-label">ADMINISTRATION</span><h1>Management Overview</h1></div><div class="top-right-hub"><button class="theme-toggle-btn" id="themeToggle" type="button" title="Toggle dark mode">◐</button><div class="header-clock-box"><div id="liveDay"></div><div id="liveDate"></div><div id="liveTime"></div></div><div class="avatar-badge-circle">{{ (current_user.name[:2] if current_user else 'SA')|upper }}</div></div></header>
+    <div class="dashboard-container">
+        <span class="section-kicker">Asset Operations</span><h2>Today at Smart Asset.</h2><p class="muted-copy">Live visibility into deployment states, health metrics, and hardware valuations.</p>
+        <div class="metrics-grid"><div class="card"><span class="card-title-lbl">Total Assets</span><p class="card-value">{{ stats.total_assets }}</p></div><div class="card"><span class="card-title-lbl">Active</span><p class="card-value">{{ stats.active_assets }}</p></div><div class="card"><span class="card-title-lbl">Idle</span><p class="card-value">{{ stats.idle_assets }}</p></div><div class="card"><span class="card-title-lbl">Pending Maint.</span><p class="card-value">{{ stats.pending_maintenance }}</p></div><div class="card"><span class="card-title-lbl">Total Value</span><p class="card-value">{{ stats.total_value }}</p></div></div>
+        <div class="bottom-grid"><section class="card"><div class="calendar-header-row"><div><span class="section-kicker">System Calendar</span><h3 id="calendarMonthYearDisplay"></h3></div></div><div class="week-headers"><div>SU</div><div>MO</div><div>TU</div><div>WE</div><div>TH</div><div>FR</div><div>SA</div></div><div id="calendarDaysGrid" class="calendar-grid"></div></section><section class="card"><span class="section-kicker">Notice Board</span><h3>Active Bulletins</h3>{% for notice in notices %}<div class="bulletin-item"><div><p class="bulletin-date">{{ notice.date }}</p><p class="bulletin-text">{{ notice.title }}</p></div></div>{% else %}<p class="muted-copy">No active bulletins.</p>{% endfor %}</section></div>
+    </div>
+</main>
+<script>
+function updateClock() { const now = new Date(); document.getElementById('liveDay').textContent = now.toLocaleDateString(undefined, {weekday:'long'}); document.getElementById('liveDate').textContent = now.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'}); document.getElementById('liveTime').textContent = now.toLocaleTimeString(); }
+function drawCalendar() { const now = new Date(); const first = new Date(now.getFullYear(), now.getMonth(), 1).getDay(); const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(); document.getElementById('calendarMonthYearDisplay').textContent = now.toLocaleDateString(undefined, {month:'long', year:'numeric'}); const grid = document.getElementById('calendarDaysGrid'); grid.innerHTML = ''; for (let i=0; i<first; i++) grid.appendChild(document.createElement('div')); for (let day=1; day<=days; day++) { const cell=document.createElement('div'); cell.className='calendar-day-cell'; cell.textContent=day; if(day===now.getDate()) cell.classList.add('today'); grid.appendChild(cell); } }
+document.getElementById('themeToggle').addEventListener('click', () => { document.body.classList.toggle('dark-theme'); localStorage.setItem('sams-theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light'); }); if(localStorage.getItem('sams-theme') === 'dark') document.body.classList.add('dark-theme'); updateClock(); drawCalendar(); setInterval(updateClock, 1000);
+</script>
+</body>
+</html>

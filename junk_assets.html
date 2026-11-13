@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Junk Assets | Smart Asset</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .junk-page { --danger: #d74343; --danger-soft: rgba(215, 67, 67, .1); }
+        .junk-page-head, .junk-toolbar, .junk-page-title, .junk-page-actions { display: flex; align-items: center; }
+        .junk-page-head { justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
+        .junk-page-title { align-items: flex-start; flex-direction: column; gap: 4px; }
+        .junk-page-title h2 { margin: 0; font-size: 1.45rem; }
+        .junk-page-title p { margin: 0; color: var(--text-muted); }
+        .junk-page-actions { gap: 10px; flex-wrap: wrap; }
+        .junk-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-bg); color: var(--text-dark); font: inherit; font-size: .88rem; font-weight: 650; text-decoration: none; cursor: pointer; }
+        .junk-button:hover { border-color: var(--primary-blue); }
+        .junk-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+        .junk-stat { border-left: 3px solid var(--danger); }
+        .junk-stat-label { color: var(--text-muted); font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+        .junk-stat-value { margin: 6px 0 0; font-size: 1.5rem; font-weight: 750; }
+        .junk-toolbar { justify-content: space-between; gap: 14px; padding: 15px 18px; border-bottom: 1px solid var(--border-color); }
+        .junk-toolbar h3 { margin: 0; font-size: 1rem; }
+        .junk-search { display: flex; width: min(100%, 430px); gap: 8px; }
+        .junk-search input { min-width: 0; flex: 1; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: 7px; }
+        .junk-table-wrap { overflow-x: auto; }
+        .junk-table { width: 100%; min-width: 1120px; border-collapse: collapse; text-align: left; }
+        .junk-table th { padding: 12px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: .7rem; font-weight: 750; text-transform: uppercase; white-space: nowrap; }
+        .junk-table td { padding: 13px 14px; border-bottom: 1px solid var(--border-color); vertical-align: top; font-size: .84rem; }
+        .junk-table tr:last-child td { border-bottom: 0; }
+        .junk-primary { font-weight: 700; }
+        .junk-muted { display: block; margin-top: 3px; color: var(--text-muted); font-size: .78rem; }
+        .junk-method { display: inline-block; padding: 4px 8px; border-radius: 5px; background: rgba(59, 130, 246, .12); color: var(--primary-blue); font-size: .75rem; font-weight: 700; }
+        .junk-delete { color: var(--danger); border-color: rgba(215, 67, 67, .35); background: var(--danger-soft); }
+        .junk-empty { padding: 48px 20px !important; color: var(--text-muted); text-align: center; }
+        .junk-flash { margin-bottom: 16px; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 7px; }
+        @media (max-width: 720px) {
+            .dashboard-container { padding: 18px 14px; }
+            .junk-stats { grid-template-columns: 1fr; }
+            .junk-toolbar { align-items: stretch; flex-direction: column; }
+            .junk-search { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <aside>
+        <div>
+            <div class="sidebar-title">Smart Asset</div>
+            <nav>
+                <p>Workspace</p>
+                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('branches_page') }}">Branches</a>
+                <a href="{{ url_for('maintenance_page') }}">Maintenance</a>
+                <a href="{{ url_for('reports_page') }}">Reports</a>
+                <a href="{{ url_for('audit_page') }}">Audit Trails</a>
+                <a class="active" href="{{ url_for('junk_page') }}">Junk Assets</a>
+                <a href="{{ url_for('users_page') }}">Users</a>
+                <a href="{{ url_for('settings_page') }}">Settings</a>
+            </nav>
+        </div>
+        <a class="btn-logout" href="{{ url_for('logout') }}">Log Out</a>
+    </aside>
+
+    <main class="junk-page">
+        <header>
+            <div>
+                <span class="muted-label">ASSET LIFECYCLE</span>
+                <h1>Junk Assets</h1>
+            </div>
+            <div class="top-right-hub">
+                <div class="header-clock-box"><div id="liveDate"></div><div id="liveTime"></div></div>
+                <div class="avatar-badge-circle" title="Signed in as {{ current_user.name if current_user else 'User' }}">{{ (current_user.name[:2] if current_user else 'SA')|upper }}</div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            {% with messages = get_flashed_messages() %}
+                {% for message in messages %}
+                    <div class="junk-flash" role="status">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <section class="junk-page-head">
+                <div class="junk-page-title">
+                    <h2>Disposal registry</h2>
+                    <p>Recorded decommissioned and written-off inventory</p>
+                </div>
+                <div class="junk-page-actions">
+                    <a class="junk-button" href="{{ url_for('export_junk_assets') }}">Export CSV</a>
+                </div>
+            </section>
+
+            <section class="junk-stats" aria-label="Disposal summary">
+                <article class="card junk-stat">
+                    <div class="junk-stat-label">Disposed records</div>
+                    <p class="junk-stat-value">{{ stats.count }}</p>
+                </article>
+                <article class="card junk-stat">
+                    <div class="junk-stat-label">Estimated scrap value</div>
+                    <p class="junk-stat-value">{{ stats.value }}</p>
+                </article>
+            </section>
+
+            <section class="card" style="padding: 0; overflow: hidden;">
+                <div class="junk-toolbar">
+                    <h3>Disposed assets</h3>
+                    <form class="junk-search" action="{{ url_for('junk_page') }}" method="GET" role="search">
+                        <input type="search" name="search" value="{{ search_query }}" placeholder="Search asset, serial, reason..." aria-label="Search junk assets">
+                        <button class="junk-button" type="submit">Search</button>
+                        {% if search_query %}<a class="junk-button" href="{{ url_for('junk_page') }}" aria-label="Clear search">Clear</a>{% endif %}
+                    </form>
+                </div>
+                <div class="junk-table-wrap">
+                    <table class="junk-table">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Serial number</th>
+                                <th>Category</th>
+                                <th>Disposal reason</th>
+                                <th>Scrap value</th>
+                                <th>Disposed date</th>
+                                <th>Method</th>
+                                <th>Donation location</th>
+                                <th>Approved by</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td><span class="junk-primary">{{ item.name }}</span></td>
+                                <td>{{ item.serial_no }}</td>
+                                <td>{{ item.category }}</td>
+                                <td>{{ item.reason }}</td>
+                                <td>KES {{ '%.2f'|format(item.scrap_value) }}</td>
+                                <td>{{ item.disposed_date }}</td>
+                                <td><span class="junk-method">{{ item.method|replace('_', ' ')|capitalize }}</span></td>
+                                <td>{{ item.donation_location or 'N/A' }}</td>
+                                <td>{{ item.approved_by }}</td>
+                                <td>
+                                    <form action="{{ url_for('delete_junk_asset', junk_id=item.id) }}" method="POST" onsubmit="return confirm('Delete this disposal record? This cannot be undone.')">
+                                        <button class="junk-button junk-delete" type="submit" aria-label="Delete {{ item.name }} record">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td class="junk-empty" colspan="10">{% if search_query %}No disposal records match "{{ search_query }}".{% else %}No assets have been decommissioned yet.{% endif %}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+    <script src="{{ url_for('static', filename='js/sams-ui.js') }}"></script>
+</body>
+</html>

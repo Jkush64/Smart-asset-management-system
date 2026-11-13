@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ branch.name }} - Inventory Workspace</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .workspace-title-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+        .btn-back-arrow {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; text-decoration: none; color: var(--text-dark);
+            font-weight: bold; font-size: 1.1rem;
+        }
+        .btn-back-arrow:hover { background-color: rgba(0,0,0,0.02); }
+
+        .controls-action-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 16px; margin-bottom: 20px; width: 100%;
+        }
+        .search-container-box {
+            position: relative; flex: 1; max-width: 450px;
+        }
+        .search-container-box input {
+            width: 100%; padding: 11px 16px 11px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px; background: var(--card-bg);
+            color: var(--text-dark); font-size: 0.9rem; box-sizing: border-box;
+        }
+        .search-icon-lbl {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--text-muted); font-weight: bold;
+        }
+        .action-buttons-group { display: flex; gap: 10px; align-items: center; }
+        .asset-import-form { display: flex; align-items: center; gap: 8px; }
+        .asset-import-form input[type="file"] { max-width: 190px; font-size: 0.78rem; }
+        .btn-blue-primary {
+            background-color: #0A2540; color: white; border: none;
+            padding: 11px 22px; border-radius: 10px; font-weight: 600;
+            cursor: pointer; font-size: 0.9rem;
+        }
+        .btn-white-secondary {
+            background-color: var(--card-bg); color: var(--text-dark);
+            border: 1px solid var(--border-color); padding: 11px 18px;
+            border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem;
+            text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+        }
+
+        .inventory-table-container {
+            background-color: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 16px; overflow: hidden; margin-top: 15px; width: 100%;
+        }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th {
+            background-color: #f8fafc; color: #475569; font-size: 0.75rem;
+            text-transform: uppercase; letter-spacing: 0.05em; padding: 14px 20px;
+            border-bottom: 1px solid var(--border-color); font-weight: 700;
+        }
+        body.dark-theme th { background-color: rgba(255,255,255,0.02); color: #cbd5e1; }
+        td { padding: 14px 20px; border-bottom: 1px solid var(--border-color); font-size: 0.88rem; font-weight: 500; }
+        tr:last-child td { border-bottom: none; }
+        
+        .empty-placeholder-msg {
+            padding: 60px 20px; text-align: center; color: var(--text-muted);
+            font-size: 0.95rem; font-weight: 500;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.4); display: none;
+            align-items: center; justify-content: center; z-index: 2000;
+        }
+        .modal-box {
+            background-color: var(--card-bg); border: 1px solid var(--border-color);
+            padding: 28px; border-radius: 20px; width: 100%; max-width: 460px;
+            max-height: calc(100vh - 40px); overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-dark); border-radius: 8px; box-sizing: border-box; font-size: 0.9rem; }
+        .modal-actions-bar { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+        .flash-message { padding: 12px 16px; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: 8px; }
+        .table-scroll { overflow-x: auto; }
+        @media (max-width: 900px) {
+            .controls-action-row { align-items: stretch; flex-direction: column; }
+            .search-container-box { max-width: none; }
+            .action-buttons-group { flex-wrap: wrap; }
+        }
+        @media (max-width: 600px) {
+            .dashboard-container { padding: 18px 14px; }
+            header { padding: 12px 16px; }
+            .workspace-title-row { align-items: flex-start; }
+            .action-buttons-group, .asset-import-form { width: 100%; }
+            .asset-import-form input[type="file"] { flex: 1; min-width: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div>
+            <div class="sidebar-title">Smart Asset</div>
+              <nav>
+                <p>Workspace</p>
+                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('branches_page') }}" class="active">Branches</a>
+                <a href="{{ url_for('maintenance_page') }}">Maintenance</a>
+                <a href="{{ url_for('reports_page') }}">Reports</a>
+                <a href="{{ url_for('audit_page') }}">Audit Trails</a>
+                <a href="{{ url_for('junk_page') }}">Junk Assets</a>
+                <a href="{{ url_for('users_page') }}">Users</a>
+                <a href="{{ url_for('settings_page') }}">Settings</a>
+            </nav>
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div>
+                <span style="color: #94a3b8; font-size: 0.75rem; font-weight: bold; letter-spacing: 0.05em;">BRANCH WORKSPACE</span>
+                <h1 style="margin: 2px 0 0 0; font-size: 1.25rem;">Branch Inventory List</h1>
+            </div>
+
+        </header>
+
+        <div class="dashboard-container">
+            <div class="workspace-title-row">
+                <a href="/branches" class="btn-back-arrow" title="Back to Branches Directory">←</a>
+                <div>
+                    <h2 style="margin: 0; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em; color: #0f172a;">{{ branch.name }}</h2>
+                    <p style="color: var(--text-muted); margin: 3px 0 0 0; font-size: 0.88rem; font-weight: 500;">
+                        {{ branch.address }} · Managed by {{ branch.manager_name }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="controls-action-row">
+                <form action="{{ url_for('view_branch_workspace', branch_id=branch.id) }}" method="GET" class="search-container-box">
+                    <span class="search-icon-lbl">🔍</span>
+                    <input type="search" name="search" placeholder="Search assets..." value="{{ search_query }}" aria-label="Search assets">
+                </form>
+
+                <div class="action-buttons-group">
+                    <button type="button" class="btn-blue-primary" onclick="toggleAssetModal(true)">+ Add Asset</button>
+                    <form action="{{ url_for('import_branch_assets', branch_id=branch.id) }}" method="POST" enctype="multipart/form-data" class="asset-import-form">
+                        <input type="file" name="file" accept=".csv,text/csv" required aria-label="Choose asset CSV file">
+                        <button type="submit" class="btn-white-secondary">Import CSV</button>
+                    </form>
+                    <a class="btn-white-secondary" href="{{ url_for('export_branch_assets', branch_id=branch.id) }}">Export CSV</a>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages() %}
+                {% for message in messages %}
+                    <div class="flash-message" role="status">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <div class="inventory-table-container table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Serial No.</th>
+                            <th>Model</th>
+                            <th>Category</th>
+                            <th>Location</th>
+                            <th>Purchased</th>
+                            <th>Cost</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in assets %}
+                        <tr>
+                            <td><strong style="color: #0f172a;">{{ asset.name }}</strong></td>
+                            <td style="font-family: monospace; font-size: 0.8rem;">{{ asset.serial_no }}</td>
+                            <td>{{ asset.model }}</td>
+                            <td><span style="padding: 4px 8px; background: rgba(37,99,235,0.05); color: #2563eb; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">{{ asset.category }}</span></td>
+                            <td>{{ asset.location_room }}</td>
+                            <td>{{ asset.purchased_date }}</td>
+                            <td style="font-weight: 600;">KES {{ asset.cost }}</td>
+                            <td><span style="font-weight: bold;">{{ asset.status }}</span></td>
+                            <td style="text-align: right;">
+                                <form action="{{ url_for('process_asset_lifecycle_writeoff', asset_id=asset.id) }}" method="POST" onsubmit="return confirm('Decommission this asset?')">
+                                    <button type="submit" style="background: rgba(239,68,68,0.06); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+                                        Decommission
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                                No infrastructure assets registered inside this workspace hub branch.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="assetAdditionFormModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="assetModalTitle" onclick="if (event.target === this) toggleAssetModal(false)">
+        <div class="modal-box">
+            <h3 id="assetModalTitle" style="margin: 0 0 20px 0; font-size: 1.25rem; font-weight: 800; color: #0A2540;">Add Branch Asset</h3>
+            <form action="{{ url_for('add_asset_to_branch', branch_id=branch.id) }}" method="POST">
+                <div class="form-group">
+                    <label>Asset Item Name</label>
+                    <input type="text" name="name" maxlength="120" placeholder="e.g., Dell Monitor 24" required>
+                </div>
+                <div class="form-group">
+                    <label>Unique Serial Number</label>
+                    <input type="text" name="serial_no" maxlength="120" placeholder="e.g., SN-DELL-98234" required>
+                </div>
+                <div class="form-group">
+                    <label>Model</label>
+                    <input type="text" name="model" maxlength="120" required>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <input type="text" name="category" maxlength="80" required>
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" name="location_room" maxlength="120" required>
+                </div>
+                <div class="form-group">
+                    <label>Purchase Date</label>
+                    <input type="date" name="purchased_date" required>
+                </div>
+                <div class="form-group">
+                    <label>Cost (KES)</label>
+                    <input type="number" name="cost" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status" required>
+                        <option value="Active">Active</option>
+                        <option value="Idle">Idle</option>
+                        <option value="Maintenance">Maintenance</option>
+                    </select>
+                </div>
+                <div class="modal-actions-bar">
+                    <button type="button" class="btn-white-secondary" onclick="toggleAssetModal(false)">Cancel</button>
+                    <button type="submit" class="btn-blue-primary">Save Asset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const assetModal = document.getElementById('assetAdditionFormModal');
+
+        function toggleAssetModal(open) {
+            assetModal.style.display = open ? 'flex' : 'none';
+            if (open) assetModal.querySelector('input[name="name"]').focus();
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && assetModal.style.display === 'flex') {
+                toggleAssetModal(false);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings | Smart Asset Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .settings-intro { margin-bottom: 22px; }
+        .settings-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 20px; align-items: start; }
+        .settings-menu { display: grid; gap: 5px; padding: 10px; }
+        .settings-menu button { width: 100%; padding: 12px 14px; border: 0; border-left: 3px solid transparent; border-radius: 7px; background: transparent; color: var(--text-muted); text-align: left; font: inherit; font-weight: 700; cursor: pointer; }
+        .settings-menu button:hover { background: rgba(59, 130, 246, .08); }
+        .settings-menu button.active { border-left-color: var(--primary-blue); background: rgba(59, 130, 246, .14); color: var(--text-dark); }
+        .settings-section { display: none; }
+        .settings-section.active { display: block; }
+        .settings-section h2 { margin: 0 0 6px; font-size: 1.15rem; }
+        .section-description { margin: 0 0 20px; color: var(--text-muted); font-size: .9rem; line-height: 1.5; }
+        .setting-row { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(0, 1.2fr); gap: 20px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-color); }
+        .setting-row:last-child { border-bottom: 0; }
+        .setting-row label, .setting-label { color: var(--text-dark); font-weight: 700; }
+        .setting-help { display: block; margin-top: 4px; color: var(--text-muted); font-size: .8rem; font-weight: 400; line-height: 1.45; }
+        .setting-control { width: 100%; max-width: 380px; min-height: 42px; padding: 9px 11px; border: 1px solid var(--border-color); border-radius: 8px; font: inherit; }
+        .profile-header { display: flex; align-items: center; gap: 16px; margin: 4px 0 20px; }
+        .profile-photo { width: 76px; height: 76px; flex: 0 0 76px; border-radius: 50%; object-fit: cover; background: var(--primary-blue); color: #fff; display: grid; place-items: center; font-size: 1.5rem; font-weight: 800; }
+        .profile-upload { display: grid; gap: 6px; }
+        .profile-upload label { cursor: pointer; }
+        .profile-upload input { max-width: 100%; }
+        .settings-notice { margin: 0 0 18px; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 9px; background: var(--card-bg); color: var(--text-dark); }
+        .settings-notice.success { border-color: #16856f; }
+        .settings-notice.error { border-color: #d56363; }
+        .settings-actions { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 18px; }
+        .settings-links { display: flex; flex-wrap: wrap; gap: 16px; }
+        .settings-actions a { color: var(--primary-hover); font-weight: 600; }
+        .settings-actions button { min-height: 42px; padding: 10px 18px; border: 0; border-radius: 8px; background: var(--primary-blue); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+        .settings-actions button:hover { background: var(--primary-hover); }
+        @media (max-width: 760px) {
+            .settings-layout { grid-template-columns: 1fr; }
+            .settings-menu { display: flex; overflow-x: auto; }
+            .settings-menu button { min-width: max-content; border-left: 0; border-bottom: 3px solid transparent; }
+            .settings-menu button.active { border-bottom-color: var(--primary-blue); }
+        }
+        @media (max-width: 520px) {
+            .setting-row { grid-template-columns: 1fr; gap: 8px; }
+            .settings-actions { align-items: stretch; flex-direction: column-reverse; }
+            .settings-actions button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <aside>
+        <div>
+            <div class="sidebar-title">Smart Asset</div>
+            <nav aria-label="Main navigation">
+                <p>Workspace</p>
+                <a href="/">Dashboard</a>
+                <a href="/branches">Branches</a>
+                <a href="/maintenance">Maintenance</a>
+                <a href="/reports">Reports</a>
+                <a href="/audit">Audit Trails</a>
+                <a href="/junk">Junk Assets</a>
+                <a href="/users">Users</a>
+                <a class="active" href="/settings" aria-current="page">Settings</a>
+            </nav>
+        </div>
+        <a class="btn-logout" href="/auth/logout">Log Out Session</a>
+    </aside>
+
+    <main>
+        <header>
+            <div>
+                <span class="muted-label">SYSTEM CONFIGURATION</span>
+                <h1>Settings</h1>
+            </div>
+            <div class="top-right-hub">
+                <div class="header-clock-box">
+                    <div id="liveDate"></div>
+                    <div id="liveTime"></div>
+                </div>
+                <div class="avatar-badge-circle">{{ (current_user.name[:2] if current_user else 'SA')|upper }}</div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <div class="settings-intro">
+                <h2>Workspace preferences</h2>
+                <p class="muted-copy">Manage your profile, system defaults, appearance, and maintenance alerts.</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="settings-notice {{ category if category in ['success', 'error'] else '' }}" role="status">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form action="{{ url_for('save_settings') }}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <div class="settings-layout">
+                    <nav class="card settings-menu" aria-label="Settings sections" role="tablist" aria-orientation="vertical">
+                        <button type="button" class="active" id="tab-profile" data-tab="profile" role="tab" aria-selected="true" aria-controls="section-profile">Profile</button>
+                        <button type="button" id="tab-general" data-tab="general" role="tab" aria-selected="false" aria-controls="section-general" tabindex="-1">General</button>
+                        <button type="button" id="tab-appearance" data-tab="appearance" role="tab" aria-selected="false" aria-controls="section-appearance" tabindex="-1">Appearance</button>
+                        <button type="button" id="tab-alerts" data-tab="alerts" role="tab" aria-selected="false" aria-controls="section-alerts" tabindex="-1">Alerts</button>
+                    </nav>
+
+                    <div>
+                        <section class="card settings-section active" id="section-profile" data-section="profile" role="tabpanel" aria-labelledby="tab-profile">
+                            <h2>Profile information</h2>
+                            <p class="section-description">Update the name and email address associated with your SAMS account.</p>
+                            <div class="profile-header">
+                                {% if profile_image %}
+                                    <img class="profile-photo" id="profilePreview" src="{{ profile_image }}" alt="Current profile photo">
+                                {% else %}
+                                    <div class="profile-photo" id="profilePreview" aria-label="Profile initials">{{ config_data.admin_name[:2]|upper }}</div>
+                                {% endif %}
+                                <div class="profile-upload">
+                                    <label class="setting-label" for="profileImage">Profile photo</label>
+                                    <input id="profileImage" type="file" name="profile_image" accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp">
+                                    <span class="setting-help">Optional. PNG, JPG, GIF, or WebP image.</span>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div><label for="adminName">Full name</label></div>
+                                <input class="setting-control" id="adminName" name="admin_name" type="text" value="{{ config_data.admin_name }}" autocomplete="name" maxlength="120" required>
+                            </div>
+                            <div class="setting-row">
+                                <div><label for="adminEmail">Email address</label></div>
+                                <input class="setting-control" id="adminEmail" name="admin_email" type="email" value="{{ config_data.admin_email }}" autocomplete="email" maxlength="254" required>
+                            </div>
+                            <div class="setting-row">
+                                <div>
+                                    <span class="setting-label">Access role</span>
+                                    <span class="setting-help">Your assigned permissions.</span>
+                                </div>
+                                <strong>{{ current_user.role|capitalize if current_user else 'Administrator' }}</strong>
+                            </div>
+                        </section>
+
+                        <section class="card settings-section" id="section-general" data-section="general" role="tabpanel" aria-labelledby="tab-general" hidden>
+                            <h2>General preferences</h2>
+                            <p class="section-description">Set defaults used when working with asset and maintenance records.</p>
+                            <div class="setting-row">
+                                <div>
+                                    <label for="currency">Currency</label>
+                                    <span class="setting-help">Currency used for displayed asset values.</span>
+                                </div>
+                                <select class="setting-control" id="currency" name="currency">
+                                    <option value="KES" {% if config_data.currency == 'KES' %}selected{% endif %}>KES — Kenyan Shilling</option>
+                                    <option value="USD" {% if config_data.currency == 'USD' %}selected{% endif %}>USD — US Dollar</option>
+                                    <option value="EUR" {% if config_data.currency == 'EUR' %}selected{% endif %}>EUR — Euro</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
+                                <div>
+                                    <label for="dateFormat">Date format</label>
+                                    <span class="setting-help">Preferred date and time display format.</span>
+                                </div>
+                                <select class="setting-control" id="dateFormat" name="date_format">
+                                    <option value="%Y-%m-%d %I:%M %p" {% if config_data.date_format == '%Y-%m-%d %I:%M %p' %}selected{% endif %}>YYYY-MM-DD, 12-hour time</option>
+                                    <option value="%d/%m/%Y" {% if config_data.date_format == '%d/%m/%Y' %}selected{% endif %}>DD/MM/YYYY</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
+                                <div>
+                                    <label for="backupInterval">Backup interval</label>
+                                    <span class="setting-help">Preferred schedule for database backups.</span>
+                                </div>
+                                <select class="setting-control" id="backupInterval" name="backup_interval">
+                                    <option value="daily" {% if config_data.backup_interval == 'daily' %}selected{% endif %}>Daily</option>
+                                    <option value="weekly" {% if config_data.backup_interval == 'weekly' %}selected{% endif %}>Weekly</option>
+                                </select>
+                            </div>
+                        </section>
+
+                        <section class="card settings-section" id="section-appearance" data-section="appearance" role="tabpanel" aria-labelledby="tab-appearance" hidden>
+                            <h2>Appearance</h2>
+                            <p class="section-description">Choose the preferred display mode and navigation layout.</p>
+                            <div class="setting-row">
+                                <div>
+                                    <label for="themeMode">Theme</label>
+                                    <span class="setting-help">Choose your preferred appearance.</span>
+                                </div>
+                                <select class="setting-control" id="themeMode" name="theme_mode">
+                                    <option value="light" {% if config_data.theme_mode == 'light' %}selected{% endif %}>Light mode</option>
+                                    <option value="dark" {% if config_data.theme_mode == 'dark' %}selected{% endif %}>Dark mode</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
+                                <div>
+                                    <label for="sidebarStyle">Sidebar layout</label>
+                                    <span class="setting-help">Choose how the navigation sidebar is displayed.</span>
+                                </div>
+                                <select class="setting-control" id="sidebarStyle" name="sidebar_style">
+                                    <option value="expanded" {% if config_data.sidebar_style == 'expanded' %}selected{% endif %}>Expanded</option>
+                                    <option value="compact" {% if config_data.sidebar_style == 'compact' %}selected{% endif %}>Compact</option>
+                                </select>
+                            </div>
+                        </section>
+
+                        <section class="card settings-section" id="section-alerts" data-section="alerts" role="tabpanel" aria-labelledby="tab-alerts" hidden>
+                            <h2>Alerts</h2>
+                            <p class="section-description">Choose whether to show maintenance reminders in the workspace.</p>
+                            <div class="setting-row">
+                                <div>
+                                    <label for="maintenanceAlerts">Maintenance reminders</label>
+                                    <span class="setting-help">Enable or disable maintenance reminder notices.</span>
+                                </div>
+                                <select class="setting-control" id="maintenanceAlerts" name="alert_maintenance">
+                                    <option value="enabled" {% if config_data.alert_maintenance == 'enabled' %}selected{% endif %}>Enabled</option>
+                                    <option value="disabled" {% if config_data.alert_maintenance == 'disabled' %}selected{% endif %}>Disabled</option>
+                                </select>
+                            </div>
+                        </section>
+
+                        <div class="settings-actions">
+                            <div class="settings-links">
+                                <a href="{{ url_for('settings_password_page') }}">Change password</a>
+                                {% if current_user and current_user.role|lower == 'admin' %}
+                                    <a href="{{ url_for('download_database_backup') }}">Download full database backup</a>
+                                {% endif %}
+                            </div>
+                            <button type="submit">Save settings</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/sams-ui.js') }}"></script>
+    <script>
+        (function () {
+            var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-tab]'));
+            var sections = Array.prototype.slice.call(document.querySelectorAll('[data-section]'));
+
+            function activateTab(tab) {
+                tabs.forEach(function (item) {
+                    var selected = item === tab;
+                    item.classList.toggle('active', selected);
+                    item.setAttribute('aria-selected', String(selected));
+                    item.tabIndex = selected ? 0 : -1;
+                });
+                sections.forEach(function (section) {
+                    var selected = section.dataset.section === tab.dataset.tab;
+                    section.classList.toggle('active', selected);
+                    section.hidden = !selected;
+                });
+            }
+
+            tabs.forEach(function (tab, index) {
+                tab.addEventListener('click', function () {
+                    activateTab(tab);
+                });
+                tab.addEventListener('keydown', function (event) {
+                    var nextIndex = index;
+                    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+                        nextIndex = (index + 1) % tabs.length;
+                    } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+                        nextIndex = (index - 1 + tabs.length) % tabs.length;
+                    } else {
+                        return;
+                    }
+                    event.preventDefault();
+                    tabs[nextIndex].focus();
+                    activateTab(tabs[nextIndex]);
+                });
+            });
+
+            var imageInput = document.getElementById('profileImage');
+            imageInput.addEventListener('change', function () {
+                var file = imageInput.files && imageInput.files[0];
+                var preview = document.getElementById('profilePreview');
+                if (!file) {
+                    return;
+                }
+                var imageUrl = URL.createObjectURL(file);
+                if (preview.tagName.toLowerCase() !== 'img') {
+                    var image = document.createElement('img');
+                    image.className = preview.className;
+                    image.id = preview.id;
+                    image.alt = 'Selected profile photo preview';
+                    preview.replaceWith(image);
+                    preview = image;
+                }
+                preview.src = imageUrl;
+                preview.onload = function () {
+                    URL.revokeObjectURL(imageUrl);
+                };
+            });
+
+            function updateClock() {
+                var now = new Date();
+                document.getElementById('liveDate').textContent = now.toLocaleDateString();
+                document.getElementById('liveTime').textContent = now.toLocaleTimeString();
+            }
+            updateClock();
+            window.setInterval(updateClock, 1000);
+        }());
+    </script>
+</body>
+</html>

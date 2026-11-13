@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Reports Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .pure-chart-wrapper { display: flex; justify-content: space-between; align-items: flex-end; height: 180px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-top: 15px; }
+        .chart-column-stack { display: flex; flex-direction: column; align-items: center; flex: 1; justify-content: flex-end; }
+        .bars-container { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+        .bar-acquisition { width: 28px; background-color: #5046e5; border-radius: 4px 4px 0 0; }
+        .bar-disposal { width: 28px; background-color: #1e293b; border-radius: 4px 4px 0 0; }
+        .axis-time-lbl { font-size: 0.7rem; color: var(--text-muted); font-weight: 700; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 10px; }
+        th { background-color: #f8fafc; color: #475569; font-size: 0.75rem; text-transform: uppercase; padding: 12px 20px; border-bottom: 1px solid var(--border-color); font-weight: 700; }
+        td { padding: 12px 20px; border-bottom: 1px solid var(--border-color); font-size: 0.88rem; }
+        
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:2000; }
+        .export-choice-group { display: flex; gap: 15px; margin-bottom: 15px; }
+        .export-choice-card { flex: 1; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
+        .export-choice-card.selected { border-color: #2563eb; background: rgba(37,99,235,0.05); color: #2563eb; }
+        .filter-checkbox-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-weight: 600; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <aside>
+        <div>
+            <div class="sidebar-title">Smart Asset</div>
+             <nav>
+                <p>Workspace</p>
+                <a href="/">Dashboard</a>
+                <a href="/branches">Branches</a>
+                <a href="/maintenance">Maintenance</a>
+                <a href="/reports" class="active">Reports</a>
+                <a href="/audit">Audit Trails</a>
+                <a href="{{ url_for('junk_page') }}">Junk Assets</a>
+                <a href="/users">Users</a>
+                <a href="{{ url_for('settings_page') }}">Settings</a>
+            </nav>
+        </div>
+        <div class="sidebar-profile-footer"><div class="avatar-badge-circle">SA</div><div><strong style="color:white; font-size:0.85rem;">Admin</strong></div></div>
+    </aside>
+
+    <main>
+        <header>
+            <div>
+                <span style="color: #94a3b8; font-size: 0.75rem; font-weight: bold;">ADMINISTRATION</span>
+                <h1 style="margin: 2px 0 0 0; font-size: 1.25rem;">Reports Overview</h1>
+            </div>
+            <div class="top-right-hub"><div class="avatar-badge-circle">SA</div></div>
+        </header>
+
+        <div class="dashboard-container">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <div>
+                    <h2 style="margin:0; font-size:1.5rem; font-weight:800;">Reports</h2>
+                    <p style="color:var(--text-muted); margin:0; font-size:0.9rem;">Acquisition and disposal analytics</p>
+                </div>
+                <a href="/reports/download" style="background:#0A2540; color:white; border:none; padding:10px 18px; border-radius:8px; font-weight:600; cursor:pointer; text-decoration:none;">📥 Download Report</a>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                <div class="card" id="cardTotalCost">
+                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Total Cost</span>
+                    <p style="font-size:1.5rem; font-weight:bold; margin:5px 0 0 0; color:#2563eb;">{{ report_stats.total_cost }}</p>
+                </div>
+                <div class="card" id="cardExpiringSoon">
+                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Expiring Soon</span>
+                    <p style="font-size:1.5rem; font-weight:bold; margin:5px 0 0 0; color:#ef4444;">{{ report_stats.expiring_soon }} items</p>
+                </div>
+            </div>
+
+            <div class="card" id="chartBox">
+                <h3 style="margin:0; font-size:1rem; font-weight:800;">Acquisition vs Disposal</h3>
+                <div class="pure-chart-wrapper">
+                    <div class="chart-column-stack"><div class="bars-container"><div class="bar-acquisition" style="height:75px;"></div><div class="bar-disposal" style="height:15px;"></div></div><div class="axis-time-lbl">Q1 2023</div></div>
+                    <div class="chart-column-stack"><div class="bars-container"><div class="bar-acquisition" style="height:60px;"></div><div class="bar-disposal" style="height:20px;"></div></div><div class="axis-time-lbl">Q2 2023</div></div>
+                    <div class="chart-column-stack"><div class="bars-container"><div class="bar-acquisition" style="height:85px;"></div><div class="bar-disposal" style="height:10px;"></div></div><div class="axis-time-lbl">Q3 2023</div></div>
+                    <div class="chart-column-stack"><div class="bars-container"><div class="bar-acquisition" style="height:70px;"></div><div class="bar-disposal" style="height:25px;"></div></div><div class="axis-time-lbl">Q4 2023</div></div>
+                    <div class="chart-column-stack"><div class="bars-container"><div class="bar-acquisition" style="height:110px;"></div><div class="bar-disposal" style="height:15px;"></div></div><div class="axis-time-lbl">Q1 2024</div></div>
+                    <div class="chart-column-stack"><div class="bars-container"><div class="bar-acquisition" style="height:90px;"></div><div class="bar-disposal" style="height:30px;"></div></div><div class="axis-time-lbl">Q2 2024</div></div>
+                </div>
+            </div>
+
+            <div class="card" id="tableBox" style="padding:0; margin-top:25px; overflow:hidden;">
+                <div style="padding:15px 20px;"><h3 style="margin:0; font-size:1rem; font-weight:800;">Master Category Catalog</h3></div>
+                <table id="masterReportTable">
+                    <thead>
+                        <tr>
+                            <th>Category</th><th>Asset Name</th><th>Serial No.</th><th>Branch</th><th>Purchased</th><th>Cost</th><th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr class="asset-data-row" data-category="{{ item.category }}" data-name="{{ item.name }}" data-serial="{{ item.serial_no }}" data-branch="{{ item.branch_name if item.branch_name else 'Unassigned' }}" data-date="{{ item.purchased_date }}" data-cost="{{ item.cost }}" data-status="{{ item.status }}">
+                            <td><strong style="color:#2563eb;">{{ item.category }}</strong></td>
+                            <td style="font-weight:700;">{{ item.name }}</td>
+                            <td style="font-family:monospace;">{{ item.serial_no }}</td>
+                            <td>{{ item.branch_name if item.branch_name else "Unassigned" }}</td>
+                            <td>{{ item.purchased_date }}</td>
+                            <td>KES {{ item.cost }}</td>
+                            <td><span style="color:#065f46; font-weight:bold;">{{ item.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">No asset entries found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="exportModalWindow" class="modal-overlay">
+        <div class="card" style="width: 100%; max-width: 440px; background: white; padding: 25px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 1.2rem; font-weight: bold; color:#0A2540;">Export Configuration</h3>
+            
+            <label style="display:block; font-size:0.75rem; font-weight:bold; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase;">1. Choose Document Format</label>
+            <div class="export-choice-group">
+                <div id="formatPdfBtn" class="export-choice-card selected" onclick="setExportFormat('pdf')">📄 PDF Document</div>
+                <div id="formatExcelBtn" class="export-choice-card" onclick="setExportFormat('excel')">📊 Excel (CSV) Sheet</div>
+            </div>
+
+            <label style="display:block; font-size:0.75rem; font-weight:bold; color:var(--text-muted); margin-top:15px; margin-bottom:8px; text-transform:uppercase;">2. Selective Data Filters</label>
+            <div class="filter-checkbox-row"><input type="checkbox" id="chkTotalAssets" checked> <label for="chkTotalAssets">Include Total Assets Matrix Catalog</label></div>
+            <div class="filter-checkbox-row"><input type="checkbox" id="chkTotalCost" checked> <label for="chkTotalCost">Include Total Cost Financial Valuation</label></div>
+            <div class="filter-checkbox-row"><input type="checkbox" id="chkExpiringSoon" checked> <label for="chkExpiringSoon">Include Expiring Soon Warranty Alert Items</label></div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px;">
